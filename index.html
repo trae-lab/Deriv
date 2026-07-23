@@ -1,125 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Deriv OAuth & WebSocket Example</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deriv Even/Odd Trader</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; line-height: 1.5; }
-    button { padding: 10px 16px; font-size: 14px; cursor: pointer; }
-    #output { margin-top: 20px; background: #f4f4f4; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
-    .status { font-weight: bold; }
+    :root {
+      --bg-color: #0e0e11;
+      --card-bg: #16171d;
+      --card-border: #242731;
+      --text-main: #ffffff;
+      --text-muted: #8c8e9e;
+      --teal: #00a88f;
+      --red: #e33e53;
+      --accent-glow: #6366f1;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; min-height: 100vh; padding: 12px; }
+
+    .app-container { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* Top Bar */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--card-border); }
+    .symbol-info { display: flex; flex-direction: column; }
+    .symbol-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .symbol-price { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .price-up { color: var(--teal); }
+    .auth-badge { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #a855f7, #6366f1); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid rgba(255, 255, 255, 0.2); }
+
+    /* Digit Stats Grid */
+    .digit-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 10px 0; }
+    .digit-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 50%; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+    .digit-number { font-size: 16px; font-weight: bold; }
+    .digit-pct { font-size: 10px; color: var(--text-muted); }
+    .digit-card.active { border-color: var(--red); }
+    .digit-card.active::after { content: '▲'; color: var(--red); position: absolute; bottom: -12px; font-size: 8px; }
+
+    /* Controls Panel */
+    .controls-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .trade-type-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px dashed var(--card-border); font-size: 14px; font-weight: 600; }
+    
+    .param-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .param-input { background: #0e0e11; border: 1px solid var(--card-border); color: #fff; padding: 6px 12px; border-radius: 6px; width: 90px; text-align: right; font-weight: bold; }
+
+    /* Action Buttons */
+    .trade-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-trade { border: none; border-radius: 8px; padding: 14px; color: white; cursor: pointer; text-align: left; display: flex; flex-direction: column; justify-content: space-between; height: 75px; transition: opacity 0.2s; }
+    .btn-trade:hover { opacity: 0.9; }
+    .btn-even { background-color: var(--teal); }
+    .btn-odd { background-color: var(--red); }
+    .btn-title { font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .payout-text { font-size: 11px; opacity: 0.9; display: flex; justify-content: space-between; margin-top: 4px; }
+
+    /* Connect Banner */
+    .connect-btn { background: #6366f1; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+    #log { font-family: monospace; font-size: 11px; color: var(--text-muted); background: #000; padding: 8px; border-radius: 6px; height: 80px; overflow-y: auto; }
   </style>
 </head>
 <body>
 
-  <h2>Deriv WebSocket OAuth Demo</h2>
-  <div id="auth-section">
-    <button id="login-btn">Log in with Deriv</button>
+  <div class="app-container">
+    
+    <!-- Header / Instrument -->
+    <div class="top-bar">
+      <div class="symbol-info">
+        <div class="symbol-title">
+          <span>Volatility 100 (1s) Index</span>
+        </div>
+        <div class="symbol-price" id="price-display">689.70 <span class="price-up">▲ 0.02%</span></div>
+      </div>
+      <div class="auth-badge" id="user-badge">AI</div>
+    </div>
+
+    <!-- 10 Last Digit Frequency Rings -->
+    <div class="digit-grid" id="digit-grid">
+      <!-- Generated via JavaScript -->
+    </div>
+
+    <!-- Trade Settings & Execution -->
+    <div class="controls-panel">
+      <button id="login-btn" class="connect-btn">Connect Deriv Account</button>
+      
+      <div class="trade-type-header">
+        <span>Trade Type: <strong>Even / Odd</strong></span>
+      </div>
+
+      <div class="param-row">
+        <span>Duration:</span>
+        <input type="number" id="ticks" class="param-input" value="5" min="1" max="10"> ticks
+      </div>
+
+      <div class="param-row">
+        <span>Stake:</span>
+        <input type="number" id="stake" class="param-input" value="10.00"> USD
+      </div>
+
+      <div class="trade-buttons">
+        <button class="btn-trade btn-even" id="buy-even">
+          <div class="btn-title">Even</div>
+          <div class="payout-text"><span>Payout</span> <strong id="payout-even">18.18 USD</strong></div>
+        </button>
+
+        <button class="btn-trade btn-odd" id="buy-odd">
+          <div class="btn-title">Odd</div>
+          <div class="payout-text"><span>Payout</span> <strong id="payout-odd">18.18 USD</strong></div>
+        </button>
+      </div>
+
+      <div id="log">Status: Disconnected. Click connect to log in.</div>
+    </div>
+
   </div>
 
-  <p>Status: <span id="status" class="status">Disconnected</span></p>
-
-  <h3>Live API Log</h3>
-  <div id="output">Initializing...</div>
-
   <script>
-    // 1. CONFIGURATION: Replace with your registered App ID
-    const APP_ID = 'YOUR_APP_ID'; 
+    const APP_ID = 'YOUR_APP_ID'; // Replace with your registered Deriv App ID
     const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+    let ws, token;
 
-    const statusEl = document.getElementById('status');
-    const outputEl = document.getElementById('output');
+    // Elements
+    const logEl = document.getElementById('log');
+    const priceDisplay = document.getElementById('price-display');
+    const digitGrid = document.getElementById('digit-grid');
     const loginBtn = document.getElementById('login-btn');
 
-    // Utility for logging messages to the UI
-    function log(message, data = null) {
-      const timestamp = new Date().toLocaleTimeString();
-      let formatted = `[${timestamp}] ${message}`;
-      if (data) formatted += '\n' + JSON.stringify(data, null, 2);
-      outputEl.textContent = formatted + '\n\n' + outputEl.textContent;
+    // Initialize 0-9 Digit Mock Stat Cards
+    for (let i = 0; i <= 9; i++) {
+      const card = document.createElement('div');
+      card.className = `digit-card ${i === 0 ? 'active' : ''}`;
+      card.innerHTML = `<span class="digit-number">${i}</span><span class="digit-pct">10%</span>`;
+      digitGrid.appendChild(card);
     }
 
-    // 2. OAUTH REDIRECT HANDLER
+    function log(msg) {
+      logEl.textContent = msg + '\n' + logEl.textContent;
+    }
+
+    // Handle OAuth Callback
+    const urlParams = new URLSearchParams(window.location.search);
+    token = urlParams.get('token1');
+
     loginBtn.addEventListener('click', () => {
-      // Redirects user to Deriv login screen
       window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}`;
     });
 
-    // Extract token1 from URL parameters after Deriv redirects back
-    function getTokenFromURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      // Deriv returns tokens as token1, acct1, token2, acct2, etc.
-      return urlParams.get('token1'); 
+    if (token) {
+      loginBtn.style.display = 'none';
+      connectWebSocket();
     }
 
-    // 3. WEBSOCKET CONNECTION & AUTHORIZATION
-    function initWebSocket() {
-      const token = getTokenFromURL();
-
-      if (!token) {
-        log('No OAuth token found in URL. Please click "Log in with Deriv".');
-        return;
-      }
-
-      // Hide login button once token is found
-      loginBtn.style.display = 'none';
-      statusEl.textContent = 'Connecting to WebSocket...';
-
-      const ws = new WebSocket(WS_URL);
+    function connectWebSocket() {
+      ws = new WebSocket(WS_URL);
 
       ws.onopen = () => {
-        statusEl.textContent = 'Connected. Authenticating...';
-        log('WebSocket connected. Sending authorization request...');
-
-        // Send 'authorize' payload using the OAuth token
-        ws.send(JSON.stringify({
-          authorize: token,
-          req_id: 1
-        }));
+        log('Connected. Authorizing...');
+        ws.send(JSON.stringify({ authorize: token }));
       };
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
 
-        // Handle Errors
-        if (data.error) {
-          log(`API Error [${data.error.code}]: ${data.error.message}`);
-          statusEl.textContent = 'Error during authentication';
-          return;
+        if (data.msg_type === 'authorize') {
+          log(`Authorized: ${data.authorize.email}`);
+          // Subscribe to Volatility 100 (1s) Index ticks
+          ws.send(JSON.stringify({ ticks: '1HZ100V' }));
         }
 
-        // Response handling based on request type
-        switch (data.msg_type) {
-          case 'authorize':
-            statusEl.textContent = `Authorized as ${data.authorize.email} (${data.authorize.loginid})`;
-            log('Authorization Successful!', data.authorize);
-
-            // Once authorized, request account balance updates
-            ws.send(JSON.stringify({ balance: 1, subscribe: 1, req_id: 2 }));
-            break;
-
-          case 'balance':
-            log(`Live Balance Update: ${data.balance.balance} ${data.balance.currency}`);
-            break;
-
-          default:
-            log('Received message:', data);
+        if (data.msg_type === 'tick') {
+          const price = data.tick.quote;
+          const lastDigit = parseInt(price.toString().slice(-1));
+          priceDisplay.innerHTML = `${price} <span class="price-up">▲</span>`;
+          log(`Tick: ${price} (Last Digit: ${lastDigit})`);
         }
-      };
-
-      ws.onerror = (err) => {
-        statusEl.textContent = 'WebSocket Error';
-        log('WebSocket Error encountered', err);
-      };
-
-      ws.onclose = () => {
-        statusEl.textContent = 'Disconnected';
-        log('WebSocket Connection Closed');
       };
     }
-
-    // Initialize on page load
-    initWebSocket();
   </script>
 </body>
 </html>
