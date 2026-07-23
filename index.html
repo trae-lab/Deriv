@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Deriv OAuth & WebSocket Example</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; line-height: 1.5; }
+    button { padding: 10px 16px; font-size: 14px; cursor: pointer; }
+    #output { margin-top: 20px; background: #f4f4f4; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+    .status { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>Deriv WebSocket OAuth Demo</h2>
+  <div id="auth-section">
+    <button id="login-btn">Log in with Deriv</button>
+  </div>
+
+  <p>Status: <span id="status" class="status">Disconnected</span></p>
+
+  <h3>Live API Log</h3>
+  <div id="output">Initializing...</div>
+
+  <script>
+    // 1. CONFIGURATION: Replace with your registered App ID
+    const APP_ID = 'YOUR_APP_ID'; 
+    const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+
+    const statusEl = document.getElementById('status');
+    const outputEl = document.getElementById('output');
+    const loginBtn = document.getElementById('login-btn');
+
+    // Utility for logging messages to the UI
+    function log(message, data = null) {
+      const timestamp = new Date().toLocaleTimeString();
+      let formatted = `[${timestamp}] ${message}`;
+      if (data) formatted += '\n' + JSON.stringify(data, null, 2);
+      outputEl.textContent = formatted + '\n\n' + outputEl.textContent;
+    }
+
+    // 2. OAUTH REDIRECT HANDLER
+    loginBtn.addEventListener('click', () => {
+      // Redirects user to Deriv login screen
+      window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}`;
+    });
+
+    // Extract token1 from URL parameters after Deriv redirects back
+    function getTokenFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      // Deriv returns tokens as token1, acct1, token2, acct2, etc.
+      return urlParams.get('token1'); 
+    }
+
+    // 3. WEBSOCKET CONNECTION & AUTHORIZATION
+    function initWebSocket() {
+      const token = getTokenFromURL();
+
+      if (!token) {
+        log('No OAuth token found in URL. Please click "Log in with Deriv".');
+        return;
+      }
+
+      // Hide login button once token is found
+      loginBtn.style.display = 'none';
+      statusEl.textContent = 'Connecting to WebSocket...';
+
+      const ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        statusEl.textContent = 'Connected. Authenticating...';
+        log('WebSocket connected. Sending authorization request...');
+
+        // Send 'authorize' payload using the OAuth token
+        ws.send(JSON.stringify({
+          authorize: token,
+          req_id: 1
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        // Handle Errors
+        if (data.error) {
+          log(`API Error [${data.error.code}]: ${data.error.message}`);
+          statusEl.textContent = 'Error during authentication';
+          return;
+        }
+
+        // Response handling based on request type
+        switch (data.msg_type) {
+          case 'authorize':
+            statusEl.textContent = `Authorized as ${data.authorize.email} (${data.authorize.loginid})`;
+            log('Authorization Successful!', data.authorize);
+
+            // Once authorized, request account balance updates
+            ws.send(JSON.stringify({ balance: 1, subscribe: 1, req_id: 2 }));
+            break;
+
+          case 'balance':
+            log(`Live Balance Update: ${data.balance.balance} ${data.balance.currency}`);
+            break;
+
+          default:
+            log('Received message:', data);
+        }
+      };
+
+      ws.onerror = (err) => {
+        statusEl.textContent = 'WebSocket Error';
+        log('WebSocket Error encountered', err);
+      };
+
+      ws.onclose = () => {
+        statusEl.textContent = 'Disconnected';
+        log('WebSocket Connection Closed');
+      };
+    }
+
+    // Initialize on page load
+    initWebSocket();
+  </script>
+</body>
+</html>
