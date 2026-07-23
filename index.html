@@ -3,315 +3,499 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Deriv Pro Trader Terminal</title>
+  <title>DigitTools Pro Terminal</title>
   <style>
     :root {
-      --bg-dark: #0e0e11;
-      --card-bg: #16171d;
-      --card-border: #242731;
-      --text-primary: #ffffff;
-      --text-muted: #8c8e9e;
-      --teal: #00a88f;
-      --red: #e33e53;
-      --accent: #6366f1;
-      --win: #10b981;
-      --loss: #ef4444;
+      --bg-base: #07090e;
+      --card-bg: rgba(18, 22, 32, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-glow: rgba(0, 242, 254, 0.2);
+      
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      
+      --neon-cyan: #00f2fe;
+      --neon-teal: #10b981;
+      --neon-red: #ff3b30;
+      --neon-purple: #8b5cf6;
+      --gold: #f59e0b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-primary); min-height: 100vh; padding: 16px; display: flex; justify-content: center; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    
+    body {
+      background: radial-gradient(circle at 50% 0%, #111827 0%, var(--bg-base) 70%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
 
-    .terminal-container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; }
+    .app-wrapper {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-    /* Top Navigation Bar */
-    .top-nav { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-    .account-info { display: flex; flex-direction: column; }
-    .acc-type { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
-    .acc-balance { font-size: 18px; font-weight: 700; color: #fff; }
-    .btn-auth { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; }
+    /* Top Brand & Auth Header */
+    .header-bar {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
 
-    /* Market Selector Header */
-    .market-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
-    .market-select { background: #0e0e11; color: white; border: 1px solid var(--card-border); padding: 6px 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-    .live-price { text-align: right; }
-    .price-num { font-size: 18px; font-weight: bold; font-family: monospace; }
-    .tick-up { color: var(--teal); }
-    .tick-down { color: var(--red); }
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-    /* Digit Statistics Ring Bar (0-9) */
-    .digits-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; }
-    .digits-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; text-align: center; }
-    .digit-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .digit-box { background: #0e0e11; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 4px; text-align: center; position: relative; transition: border-color 0.2s; }
-    .digit-box.active-digit { border-color: var(--teal); }
-    .digit-num { font-size: 15px; font-weight: bold; }
-    .digit-pct { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .btn-connect {
+      background: linear-gradient(135deg, #3b82f6, var(--neon-purple));
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+      transition: all 0.2s ease;
+    }
+    .btn-connect:hover { transform: translateY(-1px); box-shadow: 0 0 18px rgba(99, 102, 241, 0.6); }
 
-    /* Trade Control Panel */
-    .trade-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    .input-group { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-    .form-input { background: #0e0e11; border: 1px solid var(--card-border); color: #fff; padding: 8px 12px; border-radius: 6px; width: 100px; text-align: right; font-weight: bold; }
+    .user-account {
+      display: flex;
+      flex-direction: column;
+      text-align: right;
+    }
+    .account-id { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+    .account-bal { font-size: 16px; font-weight: 800; color: var(--neon-teal); }
 
-    /* Trade Buttons */
-    .trade-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
-    .btn-exec { border: none; border-radius: 8px; padding: 12px; color: white; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; height: 75px; }
-    .btn-exec:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-even { background: var(--teal); }
-    .btn-odd { background: var(--red); }
-    .payout-lbl { font-size: 11px; opacity: 0.9; display: flex; justify-content: space-between; width: 100%; margin-top: 6px; }
+    /* Live Market Header Card */
+    .market-banner {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
 
-    /* Open Contracts & History Table */
-    .history-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; }
-    .history-header { font-size: 12px; font-weight: bold; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
-    .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
-    .history-item { background: #0e0e11; padding: 8px 12px; border-radius: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .is-win { color: var(--win); font-weight: bold; }
-    .is-loss { color: var(--loss); font-weight: bold; }
+    .select-market {
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
 
-    /* Status Bar */
-    .status-bar { font-family: monospace; font-size: 10px; color: var(--text-muted); text-align: center; }
+    .quote-display { text-align: right; }
+    .quote-price { font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .quote-digit { font-size: 12px; color: var(--neon-cyan); font-weight: 600; margin-top: 2px; }
+
+    /* Ratios Analytics Bar (Even/Odd & Over/Under) */
+    .ratio-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ratio-row { display: flex; flex-direction: column; gap: 4px; }
+    .ratio-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .bar-track { height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; display: flex; }
+    .bar-fill-left { height: 100%; background: var(--neon-teal); transition: width 0.3s ease; }
+    .bar-fill-right { height: 100%; background: var(--neon-red); transition: width 0.3s ease; }
+
+    /* Digit Heatmap Grid (0-9) */
+    .digit-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .digit-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .digit-tile {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 4px;
+      text-align: center;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .digit-tile.hot-digit { border-color: var(--neon-teal); box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.2); }
+    .digit-tile.cold-digit { border-color: var(--neon-red); box-shadow: inset 0 0 12px rgba(255, 59, 48, 0.2); }
+    .digit-tile.active-digit { border-color: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); transform: scale(1.05); }
+
+    .tile-num { font-size: 18px; font-weight: 800; }
+    .tile-pct { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+
+    /* Execution Control Panel */
+    .controls-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .input-row { display: flex; justify-content: space-between; align-items: center; }
+    .input-label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .input-field {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      width: 100px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    /* Primary Trade Buttons */
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+    
+    .btn-trade {
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 80px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-trade:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-even { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3); }
+    .btn-odd { background: linear-gradient(135deg, #dc2626, #ff3b30); box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3); }
+
+    .btn-trade:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+
+    .btn-trade-title { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
+    .btn-trade-payout { font-size: 11px; display: flex; justify-content: space-between; opacity: 0.9; }
+
+    /* Live History Stream */
+    .history-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .history-feed { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; }
+    .history-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-win { color: var(--neon-teal); font-weight: 800; }
+    .result-loss { color: var(--neon-red); font-weight: 800; }
+
+    /* Status Footer */
+    .status-footer { font-size: 11px; color: var(--text-muted); text-align: center; font-family: monospace; }
   </style>
 </head>
 <body>
 
-  <div class="terminal-container">
+  <div class="app-wrapper">
     
-    <!-- Top Account Header -->
-    <div class="top-nav">
-      <div class="account-info">
-        <span class="acc-type" id="acc-type">Demo / Real</span>
-        <span class="acc-balance" id="acc-balance">$0.00</span>
+    <!-- Top Header Navigation -->
+    <div class="header-bar">
+      <div class="brand-title">
+        <span>⚡ DIGITTOOLS PRO</span>
       </div>
-      <button class="btn-auth" id="auth-btn">Connect Deriv</button>
+      <button class="btn-connect" id="login-btn">Connect Deriv</button>
+      <div class="user-account" id="user-info" style="display: none;">
+        <span class="account-id" id="acc-id">CR000000</span>
+        <span class="account-bal" id="acc-bal">$0.00</span>
+      </div>
     </div>
 
-    <!-- Market Selector -->
-    <div class="market-card">
+    <!-- Active Market Card -->
+    <div class="market-banner">
       <div>
-        <label for="market-select" style="font-size:10px; color:var(--text-muted); display:block; margin-bottom:4px;">SELECT MARKET</label>
-        <select id="market-select" class="market-select">
-          <option value="1HZ100V">Volatility 100 (1s)</option>
+        <select id="market-selector" class="select-market">
+          <option value="1HZ100V">Volatility 100 (1s) Index</option>
           <option value="R_100">Volatility 100 Index</option>
-          <option value="1HZ10V">Volatility 10 (1s)</option>
-          <option value="frxEURUSD">EUR/USD</option>
+          <option value="1HZ10V">Volatility 10 (1s) Index</option>
+          <option value="R_10">Volatility 10 Index</option>
+          <option value="1HZ25V">Volatility 25 (1s) Index</option>
         </select>
       </div>
-      <div class="live-price">
-        <div class="price-num" id="live-quote">0.00</div>
-        <div style="font-size:10px; color:var(--text-muted);" id="last-digit-lbl">Last Digit: -</div>
+      <div class="quote-display">
+        <div class="quote-price" id="price-quote">0.00</div>
+        <div class="quote-digit" id="last-digit">LAST DIGIT: -</div>
       </div>
     </div>
 
-    <!-- Digit Stats Grid (0-9) -->
-    <div class="digits-container">
-      <div class="digits-title">Last 100 Ticks Digit Frequency</div>
+    <!-- Even/Odd & Over/Under Live Analysis Bar -->
+    <div class="ratio-panel">
+      <!-- Even / Odd Bar -->
+      <div class="ratio-row">
+        <div class="ratio-labels">
+          <span style="color:var(--neon-teal)">EVEN: <span id="even-pct">50%</span></span>
+          <span style="color:var(--neon-red)">ODD: <span id="odd-pct">50%</span></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill-left" id="even-bar" style="width: 50%;"></div>
+          <div class="bar-fill-right" id="odd-bar" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- Over (5-9) / Under (0-4) Bar -->
+      <div class="ratio-row">
+        <div class="ratio-labels">
+          <span style="color:var(--neon-cyan)">UNDER (0-4): <span id="under-pct">50%</span></span>
+          <span style="color:var(--neon-purple)">OVER (5-9): <span id="over-pct">50%</span></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill-left" id="under-bar" style="width: 50%; background: var(--neon-cyan);"></div>
+          <div class="bar-fill-right" id="over-bar" style="width: 50%; background: var(--neon-purple);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 0-9 Digit Frequency Heatmap -->
+    <div class="digit-section">
+      <div class="section-title">
+        <span>Digit Frequency (Last 100 Ticks)</span>
+        <span style="color: var(--neon-cyan)" id="ticks-count">100 Ticks</span>
+      </div>
       <div class="digit-grid" id="digit-grid"></div>
     </div>
 
-    <!-- Trade Inputs & Action Buttons -->
-    <div class="trade-panel">
-      <div class="input-group">
-        <span>Duration (Ticks)</span>
-        <input type="number" id="ticks-input" class="form-input" value="5" min="1" max="10">
+    <!-- Execution Panel -->
+    <div class="controls-panel">
+      <div class="input-row">
+        <span class="input-label">Ticks Duration</span>
+        <input type="number" id="ticks-input" class="input-field" value="5" min="1" max="10">
       </div>
-      <div class="input-group">
-        <span>Stake (USD)</span>
-        <input type="number" id="stake-input" class="form-input" value="10" min="0.35" step="1">
+      <div class="input-row">
+        <span class="input-label">Stake Amount ($)</span>
+        <input type="number" id="stake-input" class="input-field" value="10.00" min="0.35" step="1">
       </div>
 
-      <div class="trade-actions">
-        <button class="btn-exec btn-even" id="buy-even-btn" disabled>
-          <strong style="font-size:16px;">EVEN</strong>
-          <div class="payout-lbl"><span>Payout:</span><span id="payout-even">$0.00</span></div>
+      <div class="action-grid">
+        <button class="btn-trade btn-even" id="buy-even" disabled>
+          <div class="btn-trade-title">EVEN</div>
+          <div class="btn-trade-payout"><span>Payout:</span><strong id="payout-even">$19.50</strong></div>
         </button>
-        <button class="btn-exec btn-odd" id="buy-odd-btn" disabled>
-          <strong style="font-size:16px;">ODD</strong>
-          <div class="payout-lbl"><span>Payout:</span><span id="payout-odd">$0.00</span></div>
+        <button class="btn-trade btn-odd" id="buy-odd" disabled>
+          <div class="btn-trade-title">ODD</div>
+          <div class="btn-trade-payout"><span>Payout:</span><strong id="payout-odd">$19.50</strong></div>
         </button>
       </div>
     </div>
 
-    <!-- Live Contracts & Trade History -->
-    <div class="history-panel">
-      <div class="history-header">Trade Execution History</div>
-      <div class="history-list" id="history-list">
-        <div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px;">No trades executed yet.</div>
+    <!-- Trade History -->
+    <div class="history-card">
+      <div class="section-title">Execution Log</div>
+      <div class="history-feed" id="history-feed">
+        <div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px;">Waiting for connection...</div>
       </div>
     </div>
 
-    <div class="status-bar" id="system-status">WebSocket Status: Disconnected</div>
+    <div class="status-footer" id="status-footer">Status: Disconnected</div>
+
   </div>
 
   <script>
-    // Configuration
-    const APP_ID = 'YOUR_APP_ID'; // Replace with your registered Deriv App ID
+    const APP_ID = 'YOUR_APP_ID'; // Replace with your Deriv App ID
     const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
 
-    // State Variables
     let ws = null;
-    let pingInterval = null;
-    let proposals = { DIGITEVEN: null, DIGITODD: null };
     let tickHistory = [];
-    let currentSymbol = '1HZ100V';
+    let proposals = {};
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token1');
 
-    // UI Elements
-    const authBtn = document.getElementById('auth-btn');
-    const accType = document.getElementById('acc-type');
-    const accBalance = document.getElementById('acc-balance');
-    const liveQuote = document.getElementById('live-quote');
-    const lastDigitLbl = document.getElementById('last-digit-lbl');
+    // UI Refs
+    const loginBtn = document.getElementById('login-btn');
+    const userInfo = document.getElementById('user-info');
+    const accId = document.getElementById('acc-id');
+    const accBal = document.getElementById('acc-bal');
+    const marketSelector = document.getElementById('market-selector');
+    const priceQuote = document.getElementById('price-quote');
+    const lastDigit = document.getElementById('last-digit');
     const digitGrid = document.getElementById('digit-grid');
-    const marketSelect = document.getElementById('market-select');
-    const ticksInput = document.getElementById('ticks-input');
-    const stakeInput = document.getElementById('stake-input');
-    const buyEvenBtn = document.getElementById('buy-even-btn');
-    const buyOddBtn = document.getElementById('buy-odd-btn');
-    const payoutEven = document.getElementById('payout-even');
-    const payoutOdd = document.getElementById('payout-odd');
-    const historyList = document.getElementById('history-list');
-    const systemStatus = document.getElementById('system-status');
+    const buyEven = document.getElementById('buy-even');
+    const buyOdd = document.getElementById('buy-odd');
+    const statusFooter = document.getElementById('status-footer');
 
-    // 1. Render Initial Digit Boxes (0-9)
+    // Build Digit Grid
     for (let i = 0; i <= 9; i++) {
-      const box = document.createElement('div');
-      box.className = 'digit-box';
-      box.id = `digit-box-${i}`;
-      box.innerHTML = `<div class="digit-num">${i}</div><div class="digit-pct" id="digit-pct-${i}">0%</div>`;
-      digitGrid.appendChild(box);
+      const tile = document.createElement('div');
+      tile.className = 'digit-tile';
+      tile.id = `tile-${i}`;
+      tile.innerHTML = `<div class="tile-num">${i}</div><div class="tile-pct" id="pct-${i}">0%</div>`;
+      digitGrid.appendChild(tile);
     }
 
-    // 2. Extract OAuth Token from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const oauthToken = urlParams.get('token1');
-
-    authBtn.addEventListener('click', () => {
+    loginBtn.addEventListener('click', () => {
       window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}`;
     });
 
-    // 3. WebSocket Connection Engine
-    function initWebSocket() {
+    function connect() {
       ws = new WebSocket(WS_URL);
 
       ws.onopen = () => {
-        systemStatus.textContent = 'WebSocket Connected';
-        
-        // Start Heartbeat Keep-Alive every 30s
-        pingInterval = setInterval(() => ws.send(JSON.stringify({ ping: 1 })), 30000);
-
-        if (oauthToken) {
-          authBtn.style.display = 'none';
-          ws.send(JSON.stringify({ authorize: oauthToken }));
+        statusFooter.textContent = 'Connected to Deriv WebSocket';
+        if (token) {
+          loginBtn.style.display = 'none';
+          userInfo.style.display = 'flex';
+          ws.send(JSON.stringify({ authorize: token }));
         }
-
-        // Subscribe to Ticks & Fetch 100 Historical Ticks
-        subscribeMarket(currentSymbol);
+        subscribeMarket(marketSelector.value);
         requestProposals();
       };
 
       ws.onmessage = (evt) => {
-        const response = JSON.parse(evt.data);
+        const data = JSON.parse(evt.data);
 
-        // Handle Errors
-        if (response.error) {
-          systemStatus.textContent = `Error: ${response.error.message}`;
-          return;
-        }
-
-        const msgType = response.msg_type;
-
-        // Authorization Response
-        if (msgType === 'authorize') {
-          accType.textContent = response.authorize.email;
-          accBalance.textContent = `${response.authorize.currency} ${response.authorize.balance}`;
-          // Subscribe to live balance updates
+        if (data.msg_type === 'authorize') {
+          accId.textContent = data.authorize.loginid;
+          accBal.textContent = `$${data.authorize.balance}`;
+          buyEven.disabled = false;
+          buyOdd.disabled = false;
           ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-          buyEvenBtn.disabled = false;
-          buyOddBtn.disabled = false;
         }
 
-        // Balance Subscription Response
-        if (msgType === 'balance') {
-          accBalance.textContent = `${response.balance.currency} ${response.balance.balance}`;
+        if (data.msg_type === 'balance') {
+          accBal.textContent = `$${data.balance.balance}`;
         }
 
-        // Historical Ticks Response
-        if (msgType === 'history') {
-          tickHistory = response.history.prices.map(p => parseInt(p.toString().slice(-1)));
-          updateDigitStats();
+        if (data.msg_type === 'history') {
+          tickHistory = data.history.prices.map(p => parseInt(p.toString().slice(-1)));
+          updateStats();
         }
 
-        // Live Tick Feed
-        if (msgType === 'tick') {
-          const price = response.tick.quote;
-          const lastDigit = parseInt(price.toString().slice(-1));
+        if (data.msg_type === 'tick') {
+          const price = data.tick.quote;
+          const digit = parseInt(price.toString().slice(-1));
+          priceQuote.textContent = price;
+          lastDigit.textContent = `LAST DIGIT: ${digit}`;
 
-          liveQuote.textContent = price;
-          lastDigitLbl.textContent = `Last Digit: ${lastDigit}`;
+          // Active Tile Glow
+          document.querySelectorAll('.digit-tile').forEach(t => t.classList.remove('active-digit'));
+          document.getElementById(`tile-${digit}`).classList.add('active-digit');
 
-          // Highlight Active Digit
-          document.querySelectorAll('.digit-box').forEach(el => el.classList.remove('active-digit'));
-          document.getElementById(`digit-box-${lastDigit}`).classList.add('active-digit');
-
-          // Add to rolling history (keep last 100)
-          tickHistory.push(lastDigit);
+          tickHistory.push(digit);
           if (tickHistory.length > 100) tickHistory.shift();
-          updateDigitStats();
+          updateStats();
         }
 
-        // Price Proposal Updates (Payout Quotes)
-        if (msgType === 'proposal') {
-          const contractType = response.echo_req.contract_type;
-          proposals[contractType] = response.proposal.id;
-          if (contractType === 'DIGITEVEN') payoutEven.textContent = `$${response.proposal.payout}`;
-          if (contractType === 'DIGITODD') payoutOdd.textContent = `$${response.proposal.payout}`;
+        if (data.msg_type === 'proposal') {
+          proposals[data.echo_req.contract_type] = data.proposal.id;
+          if (data.echo_req.contract_type === 'DIGITEVEN') document.getElementById('payout-even').textContent = `$${data.proposal.payout}`;
+          if (data.echo_req.contract_type === 'DIGITODD') document.getElementById('payout-odd').textContent = `$${data.proposal.payout}`;
         }
-
-        // Buy Confirmation
-        if (msgType === 'buy') {
-          systemStatus.textContent = `Trade Placed! Contract ID: ${response.buy.contract_id}`;
-          // Subscribe to live contract outcome
-          ws.send(JSON.stringify({ proposal_open_contract: 1, contract_id: response.buy.contract_id, subscribe: 1 }));
-        }
-
-        // Live Contract Outcome Monitor
-        if (msgType === 'proposal_open_contract') {
-          const contract = response.proposal_open_contract;
-          if (contract.is_sold) {
-            addHistoryRecord(contract);
-          }
-        }
-      };
-
-      ws.onclose = () => {
-        systemStatus.textContent = 'Disconnected. Reconnecting...';
-        clearInterval(pingInterval);
-        setTimeout(initWebSocket, 3000);
       };
     }
 
-    // 4. Helper Functions
     function subscribeMarket(symbol) {
       ws.send(JSON.stringify({ forget_all: 'ticks' }));
       ws.send(JSON.stringify({ ticks_history: symbol, count: 100, end: 'latest', subscribe: 1 }));
     }
 
-    function updateDigitStats() {
-      if (tickHistory.length === 0) return;
+    function updateStats() {
+      if (!tickHistory.length) return;
       const total = tickHistory.length;
       const counts = Array(10).fill(0);
-      tickHistory.forEach(d => counts[d]++);
+      let evens = 0, unders = 0;
 
-      counts.forEach((count, digit) => {
-        const pct = ((count / total) * 100).toFixed(1);
-        document.getElementById(`digit-pct-${digit}`).textContent = `${pct}%`;
+      tickHistory.forEach(d => {
+        counts[d]++;
+        if (d % 2 === 0) evens++;
+        if (d < 5) unders++;
       });
+
+      // Update Digit Frequency & Heatmap Colors
+      counts.forEach((cnt, i) => {
+        const pct = Math.round((cnt / total) * 100);
+        document.getElementById(`pct-${i}`).textContent = `${pct}%`;
+        const tile = document.getElementById(`tile-${i}`);
+        tile.classList.remove('hot-digit', 'cold-digit');
+        if (pct >= 14) tile.classList.add('hot-digit');
+        if (pct <= 6) tile.classList.add('cold-digit');
+      });
+
+      // Update Ratio Bars
+      const evenPct = Math.round((evens / total) * 100);
+      const oddPct = 100 - evenPct;
+      document.getElementById('even-pct').textContent = `${evenPct}%`;
+      document.getElementById('odd-pct').textContent = `${oddPct}%`;
+      document.getElementById('even-bar').style.width = `${evenPct}%`;
+      document.getElementById('odd-bar').style.width = `${oddPct}%`;
+
+      const underPct = Math.round((unders / total) * 100);
+      const overPct = 100 - underPct;
+      document.getElementById('under-pct').textContent = `${underPct}%`;
+      document.getElementById('over-pct').textContent = `${overPct}%`;
+      document.getElementById('under-bar').style.width = `${underPct}%`;
+      document.getElementById('over-bar').style.width = `${overPct}%`;
     }
 
     function requestProposals() {
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      const symbol = marketSelect.value;
-      const duration = parseInt(ticksInput.value);
-      const stake = parseFloat(stakeInput.value);
+      const stake = parseFloat(document.getElementById('stake-input').value);
+      const ticks = parseInt(document.getElementById('ticks-input').value);
 
       ['DIGITEVEN', 'DIGITODD'].forEach(type => {
         ws.send(JSON.stringify({
@@ -320,61 +504,22 @@
           basis: 'stake',
           contract_type: type,
           currency: 'USD',
-          duration: duration,
+          duration: ticks,
           duration_unit: 't',
-          symbol: symbol
+          symbol: marketSelector.value
         }));
       });
     }
 
-    function executeTrade(contractType) {
-      if (!proposals[contractType]) {
-        alert('Proposal quote not ready yet. Please try again.');
-        return;
-      }
-      ws.send(JSON.stringify({
-        buy: proposals[contractType],
-        price: parseFloat(stakeInput.value)
-      }));
-    }
-
-    function addHistoryRecord(contract) {
-      // Remove default empty text if present
-      if (historyList.children[0]?.textContent.includes('No trades')) {
-        historyList.innerHTML = '';
-      }
-
-      const isWin = contract.status === 'won';
-      const profit = contract.profit;
-
-      const item = document.createElement('div');
-      item.className = 'history-item';
-      item.innerHTML = `
-        <div>
-          <strong>${contract.contract_type}</strong> (${contract.underlying})
-        </div>
-        <div class="${isWin ? 'is-win' : 'is-loss'}">
-          ${isWin ? '+' : ''}$${profit.toFixed(2)}
-        </div>
-      `;
-      historyList.prepend(item);
-    }
-
-    // 5. Dynamic Controls Event Listeners
-    marketSelect.addEventListener('change', (e) => {
-      currentSymbol = e.target.value;
-      subscribeMarket(currentSymbol);
+    marketSelector.addEventListener('change', (e) => {
+      subscribeMarket(e.target.value);
       requestProposals();
     });
 
-    ticksInput.addEventListener('change', requestProposals);
-    stakeInput.addEventListener('change', requestProposals);
+    document.getElementById('stake-input').addEventListener('change', requestProposals);
+    document.getElementById('ticks-input').addEventListener('change', requestProposals);
 
-    buyEvenBtn.addEventListener('click', () => executeTrade('DIGITEVEN'));
-    buyOddBtn.addEventListener('click', () => executeTrade('DIGITODD'));
-
-    // Boot App
-    initWebSocket();
+    connect();
   </script>
 </body>
 </html>
